@@ -2,7 +2,7 @@
 Project main method to run the FileHandler.
 """
 from threading import Thread
-from handler import FileHandler
+from handler import FileHandler, HandlerError
 
 
 def main():
@@ -11,8 +11,8 @@ def main():
     try:
         file_handler_thread = Thread(target=fh.run)
         file_handler_thread.start()
-    except KeyboardInterrupt:
-        print("[!] Connection has been closed forcibly by user.")
+    except HandlerError as err:
+        print(err)
         fh.stop_observer()
 
 

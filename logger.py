@@ -2,11 +2,12 @@
 Custom logger class based on python logging library.
 """
 import logging
+from config_parser import get_configuration
 
 
 class Logger:
 
-    def __init__(self, logger_name):
+    def __init__(self, logger_name: str):
         """
         Class Constructor.
         Initializes the Following:
@@ -17,13 +18,25 @@ class Logger:
         """
         # Create logger
         self.logger = logging.getLogger(logger_name)
-        self.log_file = 'file_event_handler_logs.txt'
-        self.log_file_mode = 'w'
+        log_file = str(get_configuration("main_file_name", "logger"))
+        log_file_mode = str(get_configuration("file_mode", "logger"))
         # Set level and format
-        self.log_level = logging.INFO
-        self.logger.setLevel(self.log_level)
-        self.log_format = '[%(asctime)s] - [%(name)-12s] - [%(levelname)s] --- %(message)s'
-        self.date_format = '%d/%m/%y %H:%M:%S'
-        logging.basicConfig(filename=self.log_file, filemode=self.log_file_mode, level=self.log_level,
-                            format=self.log_format, datefmt=self.date_format)
+        log_level = self.set_log_level()
+        self.logger.setLevel(log_level)
+        log_format = str(get_configuration("log_format", "logger"))
+        date_format = str(get_configuration("date_format", "logger"))
+        logging.basicConfig(filename=log_file, filemode=log_file_mode, level=log_level,
+                            format=log_format, datefmt=date_format)
+
+    @staticmethod
+    def set_log_level() -> int:
+        """
+        Sets the log level according to the config file.
+        """
+        log_level = str(get_configuration("debug_mode", "logger"))
+        if log_level == "false".lower():
+            return logging.INFO
+        elif log_level == "true".lower():
+            return logging.DEBUG
+
 

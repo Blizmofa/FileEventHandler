@@ -7,37 +7,45 @@ import shutil
 import time
 import random
 import logging
+from config_parser import get_configuration
+
+
+SOURCE_DIR = str(get_configuration("tester_source_dir"))
+DESTINATION_DIR = str(get_configuration("watcher_source_dir"))
+DEFAULT_SLEEP_TIME = get_configuration("tester_processing_time")
 
 
 class Tester:
 
     def __init__(self):
         """
-        Class Constructor
+        Class Constructor.
         """
-        self.SOURCE_DIR = r"Test_Files"
-        self.DESTINATION_DIR = r"/home/user/Downloads"
-        self.DEFAULT_SLEEP_TIME = 2
-        logging.basicConfig(filename='tester_logs.txt', filemode='w', level=logging.INFO,
-                            format='[%(asctime)s] - [%(levelname)s] --- %(message)s', datefmt='%d/%m/%y %H:%M:%S')
+        log_file = str(get_configuration("tester_file_name", "logger"))
+        log_file_mode = str(get_configuration("file_mode", "logger"))
+        log_format = str(get_configuration("log_format", "logger"))
+        date_format = str(get_configuration("date_format", "logger"))
+        logging.basicConfig(filename=log_file, filemode=log_file_mode, level=logging.INFO,
+                            format=log_format, datefmt=date_format)
 
-    def create_file(self, file, content):
+    @staticmethod
+    def create_file(file, content):
         """
         Method for creating new file.
         :param file: For the file name.
         :param content: For the file content.
         """
         try:
-            created_file = open(self.DESTINATION_DIR + '/' + str(file), 'w')
-            created_file.write(content)
-            created_file.close()
+            with open(DESTINATION_DIR + '/' + str(file), 'w') as f:
+                f.write(content)
             print(f"   - Creating file '{file}'.")
-            time.sleep(self.DEFAULT_SLEEP_TIME)
+            time.sleep(DEFAULT_SLEEP_TIME)
             logging.info(f"File '{file}' has been created successfully.")
         except Exception as err:
             logging.error(f"Unable to create file '{file}', Error: {err}.")
 
-    def delete_file(self, file):
+    @staticmethod
+    def delete_file(file):
         """
         Method for deleting a given file.
         :param file: For the file to delete.
@@ -45,26 +53,28 @@ class Tester:
         try:
             os.remove(str(file))
             print(f"   - Deleting file '{file}'.")
-            time.sleep(self.DEFAULT_SLEEP_TIME)
+            time.sleep(DEFAULT_SLEEP_TIME)
             logging.info(f"File '{file}' has been deleted successfully.")
         except (FileNotFoundError, FileExistsError) as err:
             logging.error(f"Unable to delete file '{file}', Error: {err}.")
 
-    def rename_file(self, file, new_name):
+    @staticmethod
+    def rename_file(file, new_name):
         """
         Method for renaming a given file.
         :param file: For the file to rename.
         :param new_name: For the new file name.
         """
         try:
-            os.rename(self.DESTINATION_DIR + '/' + file, self.DESTINATION_DIR + '/' + new_name)
+            os.rename(DESTINATION_DIR + '/' + file, DESTINATION_DIR + '/' + new_name)
             print(f"   - Renaming file '{file}' to '{new_name}'.")
-            time.sleep(self.DEFAULT_SLEEP_TIME)
+            time.sleep(DEFAULT_SLEEP_TIME)
             logging.info(f"File '{file}' has been renamed to '{new_name}' successfully.")
         except (FileNotFoundError, FileExistsError) as err:
             logging.error(f"Unable to rename file '{file}', Error: {err}.")
 
-    def move_file(self, file, new_path):
+    @staticmethod
+    def move_file(file, new_path):
         """
         Method for moving a given file.
         :param file: For the file to move.
@@ -73,21 +83,22 @@ class Tester:
         try:
             shutil.move(file, new_path)
             print(f"   - Moving file '{file}' to '{new_path}'.")
-            time.sleep(self.DEFAULT_SLEEP_TIME)
+            time.sleep(DEFAULT_SLEEP_TIME)
             logging.info(f"File '{file}' has been moved to '{new_path} successfully.'")
         except (shutil.Error, FileNotFoundError, FileExistsError) as err:
             logging.error(f"Unable to move file '{file}', Error: {err}.")
 
-    def copy_file(self, file, destination):
+    @staticmethod
+    def copy_file(file, destination):
         try:
             shutil.copy(file, destination)
             print(f"   - Copying file '{file}' to '{destination}'.")
-            time.sleep(self.DEFAULT_SLEEP_TIME)
+            time.sleep(DEFAULT_SLEEP_TIME)
             logging.info(f"File '{file}' has been copied to '{destination}' successfully.")
         except (FileNotFoundError, FileExistsError) as err:
             logging.error(f"Unable to copy file '{file}', Error: {err}.")
 
-    def tester_run(self):
+    def run_tester(self):
         print("[+] Tester has started...")
         print(f"[+] Testing files creation...")
         # For checking files creation with duplicates
@@ -110,13 +121,6 @@ class Tester:
         self.rename_file(file2, 'rename.txt')
         self.rename_file(file3, 'rename2.txt')
 
-        # For checking deletion of files scenarios
-        # files = os.listdir(self.DESTINATION_DIR)
-        # print(f"[+] Testing files deletion...")
-        # for file in files:
-        #     path = os.path.join(self.DESTINATION_DIR, file)
-        #     self.delete_file(path)
-
         # For checking unsupported file types
         print(f"[+] Testing files unsupported types...")
         self.create_file("unsupported.1", "im an unsupported file type.")
@@ -124,18 +128,33 @@ class Tester:
         self.create_file("unsupported.info", "im an unsupported file type2.")
 
         # For checking download or moved or modified scenarios on supported files format
-        files = os.listdir(self.SOURCE_DIR)
+        files = os.listdir(SOURCE_DIR)
         print(f"[+] Testing files moving or modified...")
         for file in files:
-            path = os.path.join(self.SOURCE_DIR, file)
-            self.copy_file(path, self.DESTINATION_DIR)
+            path = os.path.join(SOURCE_DIR, file)
+            self.copy_file(path, DESTINATION_DIR)
+
+        # For checking deletion of files scenarios
+        files = os.listdir(DESTINATION_DIR)
+        print(f"[+] Testing files deletion...")
+        for file in files:
+            path = os.path.join(DESTINATION_DIR, file)
+            self.delete_file(path)
 
         # Copy again a random number of files to check same file hash scenarios
         print(f"[+] Testing files duplicates...")
         for file in random.sample(files, 4):
-            path = os.path.join(self.SOURCE_DIR, file)
-            self.move_file(path, self.DESTINATION_DIR)
+            path = os.path.join(SOURCE_DIR, file)
+            self.move_file(path, DESTINATION_DIR)
 
 
-tester = Tester()
-tester.tester_run()
+def tester_main():
+
+    tester = Tester()
+    tester.run_tester()
+
+
+tester_main()
+
+
+
